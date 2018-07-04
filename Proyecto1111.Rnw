@@ -1,0 +1,240 @@
+\documentclass{article}
+
+
+%%%%
+% PLOTS mapas y conglomerados
+% bibliografia
+%%%%
+\usepackage[utf8]{inputenc}
+\usepackage{longtable}
+\usepackage{authblk}
+\usepackage{adjustbox}
+
+\usepackage{natbib}
+
+
+
+\title{INDICES POBLACIONALES EN COLOMBIA POR DEPARTAMENTO}
+% autores
+
+\author[]{\normalsize Lorenzo Vicini}
+
+
+
+\affil[1,2]{\small  Escuela de Ingenieria,Universidad de los Andes\\
+\texttt{{Herramientas Computacionales} le.vicini10@uniandes.edu.co}}
+\date{02 de Julio de 2018}
+%%%%
+
+
+
+
+\begin{document}
+
+\SweaveOpts{concordance=TRUE}
+\maketitle
+\begin{abstract}
+Este es mi primer trabajo en exploracion y modelamiento de indices usando LATEX. Este trabajo lo he hecho bajo la filosofia de trabajo replicable a partir de el archivo provisto por el profesor del curso, el cual hacia uso de programas tales como: RStudio, Python, Zotero, entre otros.\cite{macqueen_methods_nodate}
+\end{abstract}
+
+\section*{Introduccion}
+
+El siguiente trabajo pretende mostrar El indice de desarrollo humano (IDH) para Colombia a partir de la densidad poblacional de cada departamento, la cual se divide en rural y urbana. Cabe recordar que el IDH  es un indicador del desarrollo humano por pais, elaborado por el Programa de las Naciones Unidas para el Desarrollo , el cual tiene en cuenta: el tener una vida larga y saludable, adquirir conocimientos, esperanza de vida, periodos de educacion recibidos, indice del PIB, etc.  
+En el desarrollo del trabajo se realizaran analisis estadisticos fundamentados con graficas y tablas. Se finalizara con un analisis de Clusterizacion el cual mostrara de manera grafica el desarrollo de los diferentes departamentos de Colombia. 
+
+\clearpage
+
+
+\section{Exploracion Univariada}\label{univariada}
+
+Se denomina exploracion univariada al proceso en el que se obtiene las medidas estadisticas, la tabla de frecuencias y algun grafico de resumen de una variable en particular.Dichos datos  y analisis se mostraran acontinuacion. En esta seccion se exploran los diferentes datos  (IDH, Poblacion Rural y Urbana) 
+
+Comencemos viendo que hay en la sección \ref{univariada} en la página \pageref{univariada}.
+
+
+
+<<getData, echo=FALSE>>=
+# NO OLVIDAR set working directory
+filename="colombia.csv"
+colb=read.csv(filename, stringsAsFactors = FALSE)
+#str(colb)
+#dim(colb) 
+@
+
+
+<<summary, results=tex,echo=FALSE>>=
+library(stargazer)
+vars1 <- colb[, c(1:5)]
+
+stargazer(vars1,title = "Medidas estadisticas", label = "stats",summary.stat = c("n", "median"))
+@
+\begin{figure}[h]
+
+<<hist, echo=FALSE,fig=T,width=10,height=7>>=
+par(mfrow=c(2,2))
+hist(colb$IDH,main="Hist 1",ylab="Frecuencia",col="GREEN")
+hist(colb[,3],main="Hist 2",ylab="Frecuencia",col="GREEN")
+hist(colb[,4],main="Hist 3",ylab="Frecuencia",col="GREEN")
+#colb
+@
+
+\caption{Histogramas Iniciales}
+\label{F1}
+\end{figure}
+@
+<<echo=FALSE>>=
+colb$cabeLog=log(colb[,3])
+colb$restoLog=log(colb[,4])
+@
+
+
+\begin{figure}[h]
+<<log, echo=FALSE,fig=TRUE>>=
+par(mfrow=c(2,2))
+hist(colb$IDH,main="Hist 1",ylab="Frecuencia", col="BLUE")
+hist(colb$cabeLog,main="Hist 2",ylab="Frecuencia",col="BLUE")
+hist(colb$restoLog,main="Hist 3",ylab="Frecuencia",col="BLUE")
+@
+\caption{Histogramas despues de la transformacion logaritmica}
+\end{figure}
+\clearpage
+
+\section{Exploracion Bivariada}
+ Las correlaciones bivariadas son herramientas comunes y se utilizan para estudiar como una variable influye con otra. En esta seccion se genera un analisis de la variable IDH con respecto a las otras dos variables (poblacion urabana y rural)
+
+<<corrDem,results=tex, echo=FALSE>>=
+explanans=names(colb)[c(7:8)]
+corrDem=cor(colb$IDH,colb[,explanans],use="na.or.complete")
+stargazer(corrDem,title="Correlacion de IDH con las demas variables",label="corrDem")
+@
+
+En probabilidad y estadistica, la correlacion indica la fuerza y la direccion de una relacion lineal y proporcionalidad entre dos variables estadisticas. Se considera que dos variables cuantitativas estan correlacionadas cuando los valores de una de ellas varian sistematicamente con respecto a los valores de la otra. 
+
+Estos son los resultados de la correlacion: 
+
+<<corrTablex, result=tex, echo=FALSE>>=
+#corrTableX=round(cor(colb[,explanans],
+ #              use = "na.or.complete"),2)
+#corrTableX_copy=corrTableX
+ #Hide upper triangle
+#corrTableX[upper.tri(corrTableX)]<-""
+#stargazer(corrTableX, title="Correlacion entre variables independientes",label = 'corrTableX')
+@
+<<corrTableX, results=tex, echo=FALSE>>=
+corrTableX=round(cor(colb[explanans],
+               use = "na.or.complete"),2)
+corrTableX_copy=corrTableX
+# Hide upper triangle
+
+corrTableX[upper.tri(corrTableX)]<-""
+
+stargazer(corrTableX, title="Correlación entre variables independientes",label = 'corrTableX')
+@
+<<corrDem, results=tex, echo=FALSE>>=
+#explanans=names(colb)[c(7:8)]
+#corrDem=cor(colb$IDH,colb[,explanans], use = "na.or.complete")
+#stargazer(corrDem, title="Correlacion de IDH con las dem�s variables",label = "corrDem")
+@
+
+\begin{figure}[h]
+<<grafico,echo=FALSE, fig=TRUE>>=
+library(corrplot)
+plot(colb[,explanans])
+@
+\caption{Grafico de dispersion}
+\end{figure}
+
+
+
+\clearpage
+
+\section{Modelos de Regresion}
+
+
+
+En estadistica, el analisis de la regresion es un proceso estadistico para estimar las relaciones entre variables. Incluye muchas tecnicas para el modelado y analisis de diversas variables, cuando la atencion se centra en la relacion entre una variable dependiente y una o mas variables independientes. Para nuestro caso, la variable dependiente sera el IDH.  
+
+<<echo=FALSE>>=
+# Veamos los modelos propuestos. 
+# Primero sin poblacion resto, luego con esa:
+
+LinRegA = lm(IDH ~ ., data = colb[,c(1,7)])
+LinRegB = lm(IDH ~ ., data = colb[,c(1,7:8)])
+
+#resultados
+#summary(LinRegA)
+#summary(LinRegB)
+@
+<<regresionesPlot,results=tex, echo=FALSE>>=
+stargazer(LinRegA,LinRegB,
+          title = "Modelos de Regresi�n", 
+          label = "regresiones")
+@
+
+
+
+\clearpage
+
+
+
+
+\section{Exploracion Espacial}
+
+Para realizar el siguiente mapa, se llevo a cabo la utilizacion de la tecnica de "Kmeans" la cual es un metodo de agrupamiento, que tiene como objetivo la particion de un conjunto de n observaciones en k grupos en el que cada observacion pertenece al grupo cuyo valor medio es mas cercano.Lo cual realizaremos con el mapa de Colombia para mostrar de manera grafica el desarrollo de cada departamento clasificado en tres categorias: Alto, medio y bajo. 
+
+
+<<getMap, echo=FALSE,results=hide>>=
+# Exploración Espacial ----------------------------------------------------
+library(rgdal)
+folder='COL_maps'
+file='COL_adm1.shp'
+mapaFile=file.path(folder,file)
+mapCol <- rgdal::readOGR(mapaFile,stringsAsFactors=F) 
+plot(mapCol)
+head(mapCol@data)
+sub_colb=colb[,c(1:2,7:8)]
+mapCol_idh=merge(mapCol,sub_colb, by.x='NAME_1', by.y='Departamento',all.x=F)
+nrow(mapCol_idh)  # todas!!...
+names(mapCol_idh)
+@
+
+<<echo=FALSE, results=hide>>=
+dimensions=c("NAME_1","IDH","cabeLog","restoLog")
+library(cluster)
+dataCluster=mapCol_idh@data[,c(dimensions)]
+dataCluster
+dataCluster[,-1]=scale(dataCluster[,-1])
+## APLICANDO TECNICA KMEANS
+resultado=kmeans(dataCluster[,-1],3)
+clusters=as.data.frame(resultado$cluster)
+clusters$NAME_1=dataCluster$NAME_1
+names(clusters)=c('cluster','NAME_1')
+mapCol_idh=merge(mapCol_idh,clusters, by='NAME_1',all.x=F)
+@
+
+
+<<plotMap1, echo=FALSE, fig=TRUE, results=hide>>=
+## a pintar:
+library(RColorBrewer)
+library(classInt)
+varToPLot=mapCol_idh$cluster
+unique(varToPLot)
+aggregate(mapCol_idh@data[,c(10,11,12)],
+          by=list(mapCol_idh@data$cluster),FUN=mean)
+numberOfClasses = length(unique(varToPLot)) 
+colorForScale='Set2'
+paleta = brewer.pal(numberOfClasses, colorForScale)
+plot(mapCol,col='grey',border=0)
+plot(mapCol_idh, col = paleta[varToPLot],border=F,add=T)
+legend('left', legend = c("LOW","UP","MEDIUM"),
+       fill = paleta, 
+       cex = 0.6, 
+       bty = "n",
+       title="conglomerado")
+@
+
+\bibliographystyle{abbrv}
+\renewcommand{\refname}{Bibliografia}
+\bibliography{ProyectoZotero}
+
+\end{document}
